@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class CustomerRequest {
 
+    private String id; // Agregar este campo si se necesita el ID del cliente en las solicitudes
     private String type; // Tipo de cliente: "PERSONAL" o "BUSINESS"
     private String name; // Nombre del cliente
     private String address; // Dirección del cliente

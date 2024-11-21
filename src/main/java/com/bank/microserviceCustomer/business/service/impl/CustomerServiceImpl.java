@@ -7,7 +7,9 @@ import com.bank.microserviceCustomer.business.repository.ICustomerRepository;
 import com.bank.microserviceCustomer.business.service.ICustomerService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -15,6 +17,12 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 @Slf4j // Para habilitar los logs con SLF4J
 public class CustomerServiceImpl implements ICustomerService {
+
+    @Qualifier("creditServiceWebClient")
+    private final WebClient creditServiceWebClient;
+
+    @Qualifier("customerServiceWebClient")
+    private final WebClient customerServiceWebClient;
 
     private final ICustomerRepository customerRepository;
 
@@ -116,5 +124,17 @@ public class CustomerServiceImpl implements ICustomerService {
                 .map(this::convertToDto)
                 .doOnSuccess(dto -> log.info("Cliente con id {} actualizado exitosamente", id))
                 .doOnError(error -> log.error("Error al actualizar cliente con id {}: {}", id, error.getMessage()));
+    }
+
+    @Override
+    public Mono<Boolean> hasActiveCreditCard(String customerId) {
+        return creditServiceWebClient.get()
+                .uri("/customer/" + customerId + "/has-active-card")
+                .retrieve()
+                .bodyToMono(Boolean.class)
+                .onErrorResume(error -> {
+                    log.error("Error al verificar crédito para cliente ID: {}. Error: {}", customerId, error.getMessage());
+                    return Mono.just(false); // Devuelve falso si ocurre un error
+                });
     }
 }

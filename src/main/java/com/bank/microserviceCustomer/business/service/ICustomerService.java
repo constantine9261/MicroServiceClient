@@ -19,4 +19,8 @@ public interface ICustomerService {
     Mono<Void> deleteById(String id);
 
     Mono<CustomerDto> updateCustomer(String id, CustomerRequest request);
+
+    Mono<Boolean> hasActiveCreditCard(String customerId);
+
+
 }
