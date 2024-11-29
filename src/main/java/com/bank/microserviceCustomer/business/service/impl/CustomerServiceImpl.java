@@ -1,17 +1,20 @@
 package com.bank.microserviceCustomer.business.service.impl;
 
-import com.bank.microserviceCustomer.Model.api.customer.CustomerDto;
-import com.bank.microserviceCustomer.Model.api.customer.CustomerRequest;
+import com.bank.microserviceCustomer.Model.api.customer.*;
+import com.bank.microserviceCustomer.Model.api.shared.ResponseDto;
 import com.bank.microserviceCustomer.Model.entity.CustomerEntity;
 import com.bank.microserviceCustomer.business.repository.ICustomerRepository;
 import com.bank.microserviceCustomer.business.service.ICustomerService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Collections;
 
 @Service
 @AllArgsConstructor
@@ -23,6 +26,10 @@ public class CustomerServiceImpl implements ICustomerService {
 
     @Qualifier("customerServiceWebClient")
     private final WebClient customerServiceWebClient;
+
+    @Qualifier("accountServiceWebClient")
+    private final WebClient accountServiceWebClient;
+
 
     private final ICustomerRepository customerRepository;
 
@@ -137,4 +144,30 @@ public class CustomerServiceImpl implements ICustomerService {
                     return Mono.just(false); // Devuelve falso si ocurre un error
                 });
     }
+
+
+    @Override
+    public Mono<ConsolidatedCustomerSummary> getCustomerSummary(String customerId) {
+        return Mono.zip(
+                        accountServiceWebClient.get()
+                                .uri("/customer/" + customerId)
+                                .retrieve()
+                                .bodyToFlux(new ParameterizedTypeReference<ResponseDto<AccountDto>>() {}) // Cambiar el tipo
+                                .map(ResponseDto::getData) // Extraer el campo `data`
+                                .collectList()
+                                .defaultIfEmpty(Collections.emptyList()),
+                        creditServiceWebClient.get()
+                                .uri("/customer/" + customerId)
+                                .retrieve()
+                                .bodyToFlux(new ParameterizedTypeReference<ResponseDto<CreditDto>>() {}) // Cambiar el tipo
+                                .map(ResponseDto::getData) // Extraer el campo `data`
+                                .collectList()
+                                .defaultIfEmpty(Collections.emptyList())
+                ).map(tuple -> new ConsolidatedCustomerSummary(customerId, tuple.getT1(), tuple.getT2()))
+                .doOnSuccess(summary -> log.info("Resumen consolidado generado para el cliente {}", customerId))
+                .doOnError(error -> log.error("Error al generar el resumen consolidado para el cliente {}", customerId));
+    }
+
+
+
 }

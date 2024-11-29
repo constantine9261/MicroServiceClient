@@ -1,5 +1,6 @@
 package com.bank.microserviceCustomer.controller;
 
+import com.bank.microserviceCustomer.Model.api.customer.ConsolidatedCustomerSummary;
 import com.bank.microserviceCustomer.Model.api.customer.CustomerDto;
 import com.bank.microserviceCustomer.Model.api.customer.CustomerRequest;
 import com.bank.microserviceCustomer.Model.api.shared.ResponseDto;
@@ -109,4 +110,20 @@ public class CustomerController {
                     return Mono.just(false); // Devuelve falso si ocurre un error
                 });
     }
+
+
+    @Operation(summary = "Resumen consolidado del cliente", description = "Obtiene un resumen consolidado de todos los productos asociados al cliente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Resumen generado con éxito"),
+            @ApiResponse(responseCode = "404", description = "Cliente no encontrado"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
+    @GetMapping("/{id}/summary")
+    public Mono<ResponseDto<ConsolidatedCustomerSummary>> getCustomerSummary(@PathVariable String id) {
+        return customerService.getCustomerSummary(id)
+                .map(summary -> ResponseDtoBuilder.success(summary, "Resumen generado con éxito"))
+                .defaultIfEmpty(ResponseDtoBuilder.notFound("Cliente no encontrado"))
+                .doOnError(error -> log.error("Error al generar el resumen para el cliente {}: {}", id, error.getMessage()));
+    }
+
 }

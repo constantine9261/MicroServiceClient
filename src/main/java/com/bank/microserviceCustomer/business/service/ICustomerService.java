@@ -1,6 +1,7 @@
 package com.bank.microserviceCustomer.business.service;
 
 
+import com.bank.microserviceCustomer.Model.api.customer.ConsolidatedCustomerSummary;
 import com.bank.microserviceCustomer.Model.api.customer.CustomerDto;
 import com.bank.microserviceCustomer.Model.api.customer.CustomerRequest;
 import org.bson.types.ObjectId;
@@ -22,5 +23,7 @@ public interface ICustomerService {
 
     Mono<Boolean> hasActiveCreditCard(String customerId);
 
+
+    Mono<ConsolidatedCustomerSummary> getCustomerSummary(String customerId);
 
 }
